@@ -16,7 +16,9 @@ LOSS_PLOT_FIG_FPATH = Path(RESULTS_DIR_PATH, "loss_plot.pdf")
 ### DATA Preparation Configs ############
 RULES_FPATH = Path(DATA_DIR, "fine_tune_llm_credit_rules.json")
 DATASET_FPATH = Path(DATA_DIR, "loan_instruction_data.json")
-INFERENCE_OUTPUT_DATA_FPATH = Path(DATA_DIR, "loan_instruction_data_inference_outputs.json")
+INFERENCE_OUTPUT_DATA_FPATH = Path(
+    DATA_DIR, "loan_instruction_data_inference_outputs.json"
+)
 NUM_SYNTHETIC_DATA = 200
 TRAIN_VAL_TEST_SPLIT_RATIO = (0.7, 0.1, 0.2)
 
