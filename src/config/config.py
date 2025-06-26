@@ -4,6 +4,10 @@ from pathlib import Path
 import tiktoken
 import torch
 
+###############################################################################
+TASK = "loan-adjudication"
+###############################################################################
+
 this_filepath = Path(__file__).resolve().parent
 DATA_DIR = Path(this_filepath, "../../data/")
 RESULTS_DIR_PATH = Path(this_filepath, "../../results")
@@ -12,7 +16,8 @@ FINETUNED_MODELS_DIR = Path(this_filepath, f"../../finetuned_models")
 PRETRAINED_DIR = Path(this_filepath, f"../../pretrained_models")
 LOSS_PLOT_FIG_FPATH = Path(RESULTS_DIR_PATH, "loss_plot.pdf")
 
-##########################################
+
+###############################################################################
 ### DATA Preparation Configs ############
 RULES_FPATH = Path(DATA_DIR, "fine_tune_llm_credit_rules.json")
 DATASET_FPATH = Path(DATA_DIR, "loan_instruction_data_balanced.json")
@@ -23,7 +28,8 @@ NUM_SYNTHETIC_DATA = 1000
 SYNTHETIC_DATA_PROPORTIONS = {"APPROVED": 0.34, "REJECTED": 0.33, "FLAG_REVIEW": 0.33}
 TRAIN_VAL_TEST_SPLIT_RATIO = (0.7, 0.1, 0.2)
 
-###########################################
+
+###############################################################################
 DEVICE = "cpu"
 if torch.cuda.is_available():
     DEVICE = torch.device("cuda")
@@ -36,8 +42,8 @@ print("----" * 30)
 print(f"DEVICE = {DEVICE}")
 print("----" * 30)
 
-###########################################
-###########################################
+###############################################################################
+###############################################################################
 #### MODEL CONFIG #########################
 
 BASE_MODEL_NAME = "gpt2"  # "google/gemma-2b-it"  # "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # "google/gemma-2b-it"  # "meta-llama/Meta-Llama-3-8B"
@@ -45,7 +51,7 @@ CHOSEN_MODEL = "gpt2-medium (355M)"
 PRETRAINED_MODELS_DIR = Path(PRETRAINED_DIR, f"{BASE_MODEL_NAME}")
 FINETUNED_MODEL_FPATH = Path(
     FINETUNED_MODELS_DIR,
-    f"{re.sub(r'[ ()]', '', CHOSEN_MODEL) }-sft.pth",
+    f"{re.sub(r'[ ()]', '', CHOSEN_MODEL) }-sft-{TASK}.pth",
 )
 
 ALLOWED_GPT_SIZES = ("124M", "355M", "774M", "1558M")
@@ -94,15 +100,15 @@ print("----" * 30)
 print(f"BASE_MODEL_CONFIG = {BASE_MODEL_CONFIG}")
 print("----" * 30)
 
-#####################################################
+###############################################################################
 #### FINETUNING HYPERPARAMS #########################
 RUN_INFERENCE_ON_TEST_DATA_AFTER_FINETUNING = False
-NUM_EPOCHS = 1
+NUM_EPOCHS = 5
 WEIGHT_DECAY = 0.1
 LEARNING_RATE = 5e-5
 MODE = "finetune"  # "inference"
 
-#####################################################
+###############################################################################
 ##### Sample inference ##############################
 task_instruction = (
     f"Given the following applicant profile, decide whether to approve the following loan application and return your answer and reasons in the following format:"
@@ -111,4 +117,4 @@ task_instruction = (
 applicant_info = "### Input: \nThe applicant is a 24-year-old retired with a credit score of 691 and an annual income of $85731. Their debt-to-income ratio is 28.74%. They have been employed for 33 months. They are a US Citizen. Bankruptcy filed recently: Yes. Bank account verified: No. They have requested a loan of $48846."
 user_input = f"{task_instruction}{applicant_info}\n\n### Response: "
 
-#####################################################
+###############################################################################
