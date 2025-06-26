@@ -5,6 +5,10 @@ import urllib.request
 from pathlib import Path
 from typing import Dict, List
 
+import matplotlib.pyplot as plt
+
+# from datasets import Dataset
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 
@@ -151,10 +155,10 @@ def load_rules(json_path: str | Path) -> List[Dict]:
 def generate_applicant() -> Dict:
     return {
         "applicant": {
-            "age": random.randint(16, 65),
+            "age": random.randint(16, 100),
             "credit_score": random.randint(600, 800),
-            "annual_income_usd": random.randint(20000, 100000),
-            "debt_to_income_ratio_percent": round(random.uniform(10, 50), 2),
+            "annual_income_usd": random.randint(10000, 300000),
+            "debt_to_income_ratio_percent": round(random.uniform(10, 60), 2),
             "employment_status": random.choice(
                 [
                     "employed_full_time",
@@ -172,6 +176,7 @@ def generate_applicant() -> Dict:
                     "Permanent_Resident",
                     "Temporary_Resident",
                     "Non_Resident",
+                    "Alien",
                 ]
             ),
             "has_bankruptcy_recent": random.choice([True, False]),
@@ -195,15 +200,14 @@ def evaluate_applicant(profile: Dict, rules: List[Dict]) -> tuple[str, List[str]
         op = rule["operator"]
         expected = rule.get("value")
 
-        # Special case: field compared to a percentage of income
         if "value_field_multiplier" in rule:
             multiplier_field = rule["value_field_multiplier"].split(".")
             base = profile
             for part in multiplier_field:
                 base = base.get(part, None)
+            # print(base)
             expected = base * rule["multiplier_value"]
 
-        # Evaluate rule
         passed = True
         if op == ">=" and not (value >= expected):
             passed = False
@@ -241,15 +245,25 @@ def format_profile(profile: Dict) -> str:
     )
 
 
-# Generate dataset of n samples
-def generate_dataset(rules_path: str | Path, n: int = 100) -> List[Dict]:
+# Generate a dataset with custom label proportions
+def generate_dataset_proportional(
+    rules_path: str | Path, n: int = 100, proportions: Dict[str, float] = None
+) -> List[Dict]:
+    if proportions is None:
+        proportions = {"APPROVED": 0.5, "REJECTED": 0.25, "FLAG_REVIEW": 0.25}
+
     rules = load_rules(rules_path)
     dataset = []
-    for _ in range(n):
+    label_counts = {label: 0 for label in proportions.keys()}
+    per_label_target = {label: int(n * frac) for label, frac in proportions.items()}
+
+    while any(label_counts[label] < per_label_target[label] for label in proportions):
         profile = generate_applicant()
         label, reasons = evaluate_applicant(profile, rules)
-        input_text = format_profile(profile)
+        if label not in proportions or label_counts[label] >= per_label_target[label]:
+            continue
 
+        input_text = format_profile(profile)
         reasons = (
             " ".join(reasons)
             if reasons
@@ -259,18 +273,35 @@ def generate_dataset(rules_path: str | Path, n: int = 100) -> List[Dict]:
         dataset.append(
             {
                 "instruction": (
-                    f"Given the following applicant profile, decide whether to approve the following loan application and return your answer and reasons in the following format:"
-                    f"\n\nLABEL: One of the following (APPROVE or REJECT or FLAG_REVIEW)"
-                    f"\nREASONS: A short explanation referring to the applicant's attributes"
+                    "Given the following applicant profile, decide whether to approve the following loan application and return your answer and reasons in the following format:"
+                    "\n\nLABEL: One of the following (APPROVE or REJECT or FLAG_REVIEW)"
+                    "\nREASONS: A short explanation referring to the applicant's attributes"
                 ),
                 "input": input_text,
                 "output": f"LABEL: {label}\n\nREASONS: {reasons}",
+                "label": label,
+                "reasons": reasons,
             }
         )
+
+        label_counts[label] += 1
+
+    print("Label distribution:", label_counts)
     return dataset
 
 
-# Save to JSON file
-def save_jsonl(data: List[Dict], filename: str | Path):
+# Save dataset to JSON file
+def save_json(data: List[Dict], filename: str | Path):
     with open(filename, "w") as f:
         json.dump(data, f, indent=4)
+
+
+# def to_hf_dataset(data: List[Dict]) -> Dataset:
+#     return Dataset.from_pandas(pd.DataFrame(data))
+
+
+def plot_label_distribution(data: List[Dict]):
+    df = pd.DataFrame(data)
+    counts = df["label"].value_counts()
+    counts.plot(kind="bar", title="Label Distribution", xlabel="Label", ylabel="Count")
+    plt.show()
