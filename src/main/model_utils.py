@@ -250,10 +250,17 @@ def train_model(
     eval_iter,
     start_context,
     tokenizer,
+    early_stopping_patience=cfg.EARLY_STOPPING_PATIENCE,
+    early_stopping_delta=cfg.EARLY_STOPPING_DELTA,
 ):
     # Initialize lists to track losses and tokens seen
     train_losses, val_losses, track_tokens_seen = [], [], []
     tokens_seen, global_step = 0, -1
+
+    # Initialize early stopping variables
+    best_val_loss = float("inf")
+    epochs_without_improvement = 0
+    best_model_state = None
 
     # Main training loop
     for epoch in range(num_epochs):
@@ -279,6 +286,29 @@ def train_model(
                     f"Ep {epoch+1} (Step {global_step:06d}): "
                     f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}"
                 )
+
+                # Early stopping check
+                if val_loss + early_stopping_delta < best_val_loss:
+                    best_val_loss = val_loss
+                    epochs_without_improvement = 0
+                    best_model_state = model.state_dict()
+                else:
+                    epochs_without_improvement += 1
+                    if epochs_without_improvement >= early_stopping_patience:
+                        print(f"Early stopping triggered at epoch {epoch+1}")
+                        model.load_state_dict(
+                            best_model_state
+                        )  # Restore best model weights
+                        # Print a sample text before saving the final finetuned model weights
+                        generate_and_print_sample(
+                            model, tokenizer, device, start_context
+                        )
+                        torch.save(model.state_dict(), cfg.FINETUNED_MODEL_FPATH)
+                        print(
+                            f"Best model saved due to early stopping: [{cfg.FINETUNED_MODEL_FPATH}]"
+                        )
+                        return train_losses, val_losses, track_tokens_seen
+
         # Save checkpoint
         torch.save(
             {

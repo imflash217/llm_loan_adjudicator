@@ -102,12 +102,13 @@ print("----" * 30)
 
 ###############################################################################
 #### FINETUNING HYPERPARAMS #########################
-RUN_INFERENCE_ON_TEST_DATA_AFTER_FINETUNING = False
+RUN_INFERENCE_ON_TEST_DATA_AFTER_FINETUNING = True
 NUM_EPOCHS = 5
 WEIGHT_DECAY = 0.1
 LEARNING_RATE = 5e-5
 MODE = "finetune"  # "inference"
-
+EARLY_STOPPING_PATIENCE = 3
+EARLY_STOPPING_DELTA = 0.0
 ###############################################################################
 ##### Sample inference ##############################
 task_instruction = (
