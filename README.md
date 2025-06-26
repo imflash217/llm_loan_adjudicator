@@ -5,6 +5,11 @@ Author: Vinay Kumar
 Year: 2025
 ```
 
+## Quick tools:
+1. To generate new synthetic data; execute this script: `bash ./tools/run_synthetic_data_generation.sh`
+2. To load pretrained weights and finetune the model on synthetic data, execute this script: `bash ./tools/run_main_routine.sh`.
+3. To run only inference on finetuned model, edit this setting in `./src/config/config.py`: `MODE = "finetune"` and run `bash ./tools/run_main_routine.sh`.
+
 ## Objective
 
 The goal of this project is to simulate a dataset of personal loan applications based on a well-defined credit ruleset, and fine-tune a large language model to:
