@@ -287,6 +287,8 @@ def generate_dataset_proportional(
         label_counts[label] += 1
 
     print("Label distribution:", label_counts)
+    # Shuffle dataset to ensure randomness
+    random.shuffle(dataset)
     return dataset
 
 

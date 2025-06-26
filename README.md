@@ -87,6 +87,8 @@ To ensure a balanced dataset for training:
 - Dataset split: `train`, `validation`, and `test`
 - `src/config/config.py` holds all settings for synthetic dataset generation and model hyperparameters.
 
+- If it is needed to generate the inference outputs on the test dataset after the model is finetuned, the `RUN_INFERENCE_ON_TEST_DATA_AFTER_FINETUNING = True` setting can be set in `./src/config/config.py`
+
 ---
 
 ## Evaluation & Results
