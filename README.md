@@ -1,4 +1,4 @@
-# Project Report: Fine-Tuning a Language Model for Loan Adjudication
+# `Loan Adjudicator`: Fine-Tuning a Language Model for Loan Adjudication
 
 ```text
 Author: Vinay Kumar
