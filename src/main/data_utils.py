@@ -15,6 +15,23 @@ from torch.utils.data import DataLoader, Dataset
 from src.config import config as cfg
 
 
+class LoanDataset(Dataset):
+    def __init__(self, data, tokenizer):
+        self.data = data
+        self.encoded_texts = []
+        for item in data:
+            instruction_plus_input = format_input(item)
+            response_text = f"\n\n### Response:\n{item['output']}"
+            full_text = instruction_plus_input + response_text
+            self.encoded_texts.append(tokenizer.encode(full_text))
+
+    def __getitem__(self, index):
+        return self.encoded_texts[index]
+
+    def __len__(self):
+        return len(self.data)
+
+
 def download_data_as_file(file_path, url):
     if not os.path.exists(file_path):
         with urllib.request.urlopen(url) as response:
@@ -29,8 +46,15 @@ def load_data(file_path):
     return data
 
 
-def get_train_valid_test_split(data, train_pct, val_pct, test_pct):
-    assert train_pct + val_pct + test_pct == 1.0
+def get_train_valid_test_split(data, train_pct, val_pct, test_pct, seed=cfg.TORCH_SEED):
+    assert (
+        abs(train_pct) + abs(val_pct) + abs(test_pct) - 1.0 <= 1e-6
+    ), "Invalid split ratio. Must sum to 1.0"
+
+    # Shuffle the data reproducibly
+    data = data.copy()
+    random.seed(seed)
+    random.shuffle(data)
 
     train_portion = int(len(data) * train_pct)
     test_portion = int(len(data) * test_pct)
@@ -49,23 +73,6 @@ def format_input(item):
 
     input_text = f"\n\n### Applicant Profile:\n{item['input']}" if item["input"] else ""
     return instruction_text + input_text
-
-
-class LoanDataset(Dataset):
-    def __init__(self, data, tokenizer):
-        self.data = data
-        self.encoded_texts = []
-        for item in data:
-            instruction_plus_input = format_input(item)
-            response_text = f"\n\n### Response:\n{item['output']}"
-            full_text = instruction_plus_input + response_text
-            self.encoded_texts.append(tokenizer.encode(full_text))
-
-    def __getitem__(self, index):
-        return self.encoded_texts[index]
-
-    def __len__(self):
-        return len(self.data)
 
 
 def custom_collate_fn(
@@ -109,7 +116,13 @@ def custom_collate_fn(
     inputs_tensor = torch.stack(inputs_lst).to(device)
     targets_tensor = torch.stack(targets_lst).to(device)
 
-    return inputs_tensor, targets_tensor
+    if cfg.MODEL_PROVIDER == "huggingface":
+        return {
+            "input_ids": inputs_tensor,
+            "labels": targets_tensor,
+        }
+    else:
+        return inputs_tensor, targets_tensor
 
 
 def get_dataloaders(data, collate_fn, split=(0.7, 0.1, 0.2)):
@@ -141,7 +154,7 @@ def get_dataloaders(data, collate_fn, split=(0.7, 0.1, 0.2)):
 
 
 ##############################################################################
-######## synethetic data generation ##########################################
+######## synthetic data generation ##########################################
 
 
 # Load rules from the provided JSON file

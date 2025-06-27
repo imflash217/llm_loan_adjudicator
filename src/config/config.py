@@ -6,6 +6,8 @@ import torch
 
 ###############################################################################
 TASK = "loan-adjudication"
+TORCH_SEED = 217
+MODEL_PROVIDER = "custom"  # "custom" or "huggingface"
 ###############################################################################
 
 this_filepath = Path(__file__).resolve().parent
